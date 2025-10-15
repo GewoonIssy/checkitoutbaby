@@ -1,0 +1,13 @@
+{
+  "name": "Yahoo(di) Search",
+  "short_name": "Yahoo(di)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007BFF",
+  "description": "Detecteer undercover/fleet voertuigen",
+  "icons": [
+    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

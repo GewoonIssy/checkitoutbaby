@@ -3,12 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fleet Detector</title>
+<title>Yahoo(di) Search</title>
 <link rel="stylesheet" href="/static/style.css">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#007BFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
 </head>
 <body>
 <div class="container">
-  <h1>Fleet / Undercover Vehicle Detector</h1>
+  <h1>Yahoo(di) Search</h1>
   <input type="text" id="kenteken" placeholder="Voer kenteken in">
   <button onclick="checkKenteken()">Check</button>
   <div id="result"></div>
@@ -18,25 +23,31 @@
 async function checkKenteken() {
     const kenteken = document.getElementById("kenteken").value.trim();
     if (!kenteken) return alert("Voer een kenteken in!");
-    
     const res = await fetch(`/analyze?kenteken=${kenteken}&api_key=dev-placeholder`);
     const data = await res.json();
 
     if(data.error){
-        document.getElementById("result").innerHTML = `<p style="color:red">${data.error}</p>`;
+        document.getElementById("result").innerHTML = `<p class="error">${data.error}</p>`;
         return;
     }
 
-    let html = `<h2>Resultaat voor ${kenteken.toUpperCase()}</h2>`;
-    html += `<p><strong>Classification:</strong> ${data.analysis.classification}</p>`;
+    let color = "green";
+    const cls = data.analysis.classification.toLowerCase();
+    if(cls.includes("fleetowner") || cls.includes("undercover")) color = "red";
+    else if(cls.includes("unclear")) color = "orange";
+
+    let html = `<div class="card" style="border-left: 8px solid ${color}">`;
+    html += `<h2>${kenteken.toUpperCase()}</h2>`;
+    html += `<p><strong>Status:</strong> <span class="status" style="color:${color}">${data.analysis.classification}</span></p>`;
     html += `<p><strong>Confidence:</strong> ${data.analysis.confidence}</p>`;
     html += `<p><strong>Laatste eigenaar:</strong> ${data.analysis.last_owner_name}</p>`;
-    if(data.analysis.reasons.length){
-        html += `<p><strong>Redenen:</strong><ul>`;
-        data.analysis.reasons.forEach(r => html += `<li>${r}</li>`);
-        html += `</ul></p>`;
-    }
+    html += `</div>`;
+
     document.getElementById("result").innerHTML = html;
+}
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js');
 }
 </script>
 </body>
