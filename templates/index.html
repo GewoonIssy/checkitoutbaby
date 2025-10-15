@@ -1,54 +1,142 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yahoo(di) Search</title>
-<link rel="stylesheet" href="/static/style.css">
-<link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#007BFF">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="/static/icon-192.png">
-</head>
-<body>
-<div class="container">
-  <h1>Yahoo(di) Search</h1>
-  <input type="text" id="kenteken" placeholder="Voer kenteken in">
-  <button onclick="checkKenteken()">Check</button>
-  <div id="result"></div>
-</div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Yahoo(di) Search</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: #f0f0f0;
+                padding: 20px;
+            }
+            .container {
+                max-width: 500px;
+                margin: auto;
+                background: #fff;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+            input {
+                width: 70%;
+                padding: 10px;
+                border-radius: 6px;
+                border: 1px solid #ccc;
+                margin-right: 5px;
+            }
+            button {
+                padding: 10px 15px;
+                border: none;
+                border-radius: 6px;
+                background: #007bff;
+                color: white;
+                cursor: pointer;
+            }
+            button:hover {
+                background: #0056b3;
+            }
+            .card {
+                padding: 20px;
+                border-radius: 10px;
+                margin-top: 15px;
+                background: #fafafa;
+            }
+            h2 {
+                margin-top: 0;
+            }
+            .specs {
+                margin-top: 10px;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+            .specs span {
+                display: inline-block;
+                background: #e0e0e0;
+                color: #333;
+                padding: 5px 10px;
+                border-radius: 8px;
+                font-size: 0.95em;
+            }
+            .status-green {
+                color: green;
+            }
+            .status-red {
+                color: red;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Yahoo(di) Search</h1>
+            <input type="text" id="kenteken" placeholder="Voer kenteken in" />
+            <button onclick="checkKenteken()">Check</button>
 
-<script>
-async function checkKenteken() {
-    const kenteken = document.getElementById("kenteken").value.trim();
-    if (!kenteken) return alert("Voer een kenteken in!");
-    const res = await fetch(`/analyze?kenteken=${kenteken}&api_key=dev-placeholder`);
-    const data = await res.json();
+            <div id="result"></div>
+        </div>
 
-    if(data.error){
-        document.getElementById("result").innerHTML = `<p class="error">${data.error}</p>`;
-        return;
-    }
+        <script>
+            document
+                .getElementById("kenteken")
+                .addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") checkKenteken();
+                });
 
-    let color = "green";
-    const cls = data.analysis.classification.toLowerCase();
-    if(cls.includes("fleetowner") || cls.includes("undercover")) color = "red";
-    else if(cls.includes("unclear")) color = "orange";
+            async function checkKenteken() {
+                const kenteken = document
+                    .getElementById("kenteken")
+                    .value.trim();
+                if (!kenteken) return alert("Voer een kenteken in!");
 
-    let html = `<div class="card" style="border-left: 8px solid ${color}">`;
-    html += `<h2>${kenteken.toUpperCase()}</h2>`;
-    html += `<p><strong>Status:</strong> <span class="status" style="color:${color}">${data.analysis.classification}</span></p>`;
-    html += `<p><strong>Confidence:</strong> ${data.analysis.confidence}</p>`;
-    html += `<p><strong>Laatste eigenaar:</strong> ${data.analysis.last_owner_name}</p>`;
-    html += `</div>`;
+                const res = await fetch(`/check?kenteken=${kenteken}`);
+                const data = await res.json();
+                if (data.error) {
+                    document.getElementById("result").innerHTML =
+                        `<p style="color:red">${data.error}</p>`;
+                    return;
+                }
 
-    document.getElementById("result").innerHTML = html;
-}
+                let colorClass = "status-green";
+                let statusText;
+                if (
+                    data.analysis.classification
+                        .toLowerCase()
+                        .includes("undercover")
+                ) {
+                    colorClass = "status-red";
+                    statusText = "Hoogstwaarschijnlijk undercover";
+                } else {
+                    statusText = "Prive auto";
+                }
 
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/sw.js');
-}
-</script>
-</body>
+                // HTML opbouw: Kenteken + Voertuignaam
+                let html = `<div class="card" style="border-left:6px solid ${colorClass === "status-red" ? "red" : "green"}">`;
+                html += `<h2>${kenteken.toUpperCase()} - ${data.vehicle_type} ${statusText === "Hoogstwaarschijnlijk undercover" ? "🚨" : ""}</h2>`;
+                html += `<p><strong>Status:</strong> <span class="${colorClass}">${statusText}</span></p>`;
+                html += `<p><strong>Confidence:</strong> ${data.analysis.confidence}%</p>`;
+
+                // Specs labels
+                if (data.specs) {
+                    html += `<div class="specs">`;
+                    if (data.specs.Vermogen)
+                        html += `<span>Vermogen: ${data.specs.Vermogen}</span>`;
+                    if (data.specs.Koppel)
+                        html += `<span>Koppel: ${data.specs.Koppel} Nm</span>`;
+                    if (data.specs.Topsnelheid)
+                        html += `<span>Topsnelheid: ${data.specs.Topsnelheid}</span>`;
+                    if (data.specs["0-100 km/u"])
+                        html += `<span>0-100 km/u: ${data.specs["0-100 km/u"]}</span>`;
+                    if (data.specs.Motorinhoud)
+                        html += `<span>Motorinhoud: ${data.specs.Motorinhoud}</span>`;
+                    if (data.specs.Brandstof)
+                        html += `<span>Brandstof: ${data.specs.Brandstof}</span>`;
+                    html += `</div>`;
+                }
+
+                html += `</div>`;
+                document.getElementById("result").innerHTML = html;
+            }
+        </script>
+    </body>
 </html>
