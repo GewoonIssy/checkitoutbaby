@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fleet Detector</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+  <h1>Fleet / Undercover Vehicle Detector</h1>
+  <input type="text" id="kenteken" placeholder="Voer kenteken in">
+  <button onclick="checkKenteken()">Check</button>
+  <div id="result"></div>
+</div>
+
+<script>
+async function checkKenteken() {
+    const kenteken = document.getElementById("kenteken").value.trim();
+    if (!kenteken) return alert("Voer een kenteken in!");
+    
+    const res = await fetch(`/analyze?kenteken=${kenteken}&api_key=dev-placeholder`);
+    const data = await res.json();
+
+    if(data.error){
+        document.getElementById("result").innerHTML = `<p style="color:red">${data.error}</p>`;
+        return;
+    }
+
+    let html = `<h2>Resultaat voor ${kenteken.toUpperCase()}</h2>`;
+    html += `<p><strong>Classification:</strong> ${data.analysis.classification}</p>`;
+    html += `<p><strong>Confidence:</strong> ${data.analysis.confidence}</p>`;
+    html += `<p><strong>Laatste eigenaar:</strong> ${data.analysis.last_owner_name}</p>`;
+    if(data.analysis.reasons.length){
+        html += `<p><strong>Redenen:</strong><ul>`;
+        data.analysis.reasons.forEach(r => html += `<li>${r}</li>`);
+        html += `</ul></p>`;
+    }
+    document.getElementById("result").innerHTML = html;
+}
+</script>
+</body>
+</html>
